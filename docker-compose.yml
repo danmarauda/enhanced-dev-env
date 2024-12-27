@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_NAME: developer
+        USER_UID: 1000
+        USER_GID: 1000
+    volumes:
+      - ./workspace:/home/developer/workspace
+      - ~/.gitconfig:/home/developer/.gitconfig:ro
+      - ~/.ssh:/home/developer/.ssh:ro
+      - models:/home/developer/.local/share/models  # Shared model storage
+    environment:
+      - TERM=xterm-256color
+      - NVIDIA_VISIBLE_DEVICES=all
+      - CUDA_VISIBLE_DEVICES=0
+    ports:
+      - "8000:8000"  # FastAPI/Django
+      - "3000:3000"  # Node.js
+      - "5678:5678"  # Debug port
+      - "8888:8888"  # Jupyter
+      - "6006:6006"  # TensorBoard
+      - "11434:11434"  # Ollama
+      - "1234:1234"    # LM Studio
+      - "7860:7860"    # Text Generation WebUI
+      - "5000:5000"    # API Server
+      - "5001:5001"    # Model Server
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: zsh
+    working_dir: /home/developer/workspace
+    tty: true
+    stdin_open: true

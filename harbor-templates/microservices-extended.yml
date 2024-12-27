@@ -1,0 +1,176 @@
+project: microservices
+description: "Extended Microservices Architecture Registry"
+global_policies:
+  vulnerability_scanning: true
+  image_scanning: true
+  retention:
+    days: 60
+    count: 40
+
+service_defaults: &service_defaults
+  public: false
+  vulnerability_scanning: true
+  policies:
+    - type: vulnerability
+      severity: high
+    - type: tag_retention
+      count: 20
+      pattern: "v*"
+  webhooks:
+    - url: https://deploy.example.com/webhook
+      events: [PUSH, SCANNING_COMPLETED]
+
+repositories:
+  # API Gateway and Service Mesh
+  - name: api-gateway
+    <<: *service_defaults
+    description: "API Gateway Service"
+    policies:
+      - type: vulnerability
+        severity: critical
+        block_on_severity: true
+    metadata:
+      service_type: gateway
+      ingress: true
+    webhooks:
+      - url: https://monitor.example.com/gateway
+        events: [SCANNING_FAILED, VULNERABILITY_FOUND]
+
+  - name: service-mesh
+    <<: *service_defaults
+    description: "Service Mesh Components"
+    metadata:
+      service_type: infrastructure
+      component: mesh
+
+  # Authentication and Authorization
+  - name: auth-service
+    <<: *service_defaults
+    description: "Authentication Service"
+    policies:
+      - type: vulnerability
+        severity: critical
+        block_on_severity: true
+    metadata:
+      service_type: security
+      pci_compliance: required
+
+  - name: rbac-service
+    <<: *service_defaults
+    description: "Role-Based Access Control Service"
+    metadata:
+      service_type: security
+      compliance: required
+
+  # Core Services
+  - name: user-service
+    <<: *service_defaults
+    description: "User Management Service"
+    metadata:
+      service_type: core
+      data_classification: sensitive
+
+  - name: notification-service
+    <<: *service_defaults
+    description: "Notification Management Service"
+    metadata:
+      service_type: core
+      async: true
+
+  - name: payment-service
+    <<: *service_defaults
+    description: "Payment Processing Service"
+    policies:
+      - type: vulnerability
+        severity: critical
+        block_on_severity: true
+    metadata:
+      service_type: core
+      pci_compliance: required
+
+  # Data Services
+  - name: search-service
+    <<: *service_defaults
+    description: "Search and Indexing Service"
+    metadata:
+      service_type: data
+      elastic_version: "8.x"
+
+  - name: cache-service
+    <<: *service_defaults
+    description: "Distributed Cache Service"
+    metadata:
+      service_type: data
+      redis_version: "7.x"
+
+  # Background Processing
+  - name: worker-service
+    <<: *service_defaults
+    description: "Background Job Processing Service"
+    metadata:
+      service_type: background
+      queue_system: rabbitmq
+
+  - name: scheduler-service
+    <<: *service_defaults
+    description: "Task Scheduling Service"
+    metadata:
+      service_type: background
+      cron: enabled
+
+  # Monitoring and Logging
+  - name: logging-service
+    <<: *service_defaults
+    description: "Centralized Logging Service"
+    metadata:
+      service_type: monitoring
+      stack: elk
+
+  - name: metrics-service
+    <<: *service_defaults
+    description: "Metrics Collection Service"
+    metadata:
+      service_type: monitoring
+      stack: prometheus
+
+service_dependencies:
+  api-gateway:
+    - auth-service
+    - user-service
+  auth-service:
+    - user-service
+    - rbac-service
+  payment-service:
+    - notification-service
+    - user-service
+
+deployment_strategies:
+  production:
+    approval_required: true
+    vulnerability_threshold: low
+    min_replicas: 3
+  staging:
+    approval_required: false
+    vulnerability_threshold: medium
+    min_replicas: 2
+  development:
+    approval_required: false
+    vulnerability_threshold: high
+    min_replicas: 1
+
+monitoring:
+  metrics:
+    prometheus: true
+    grafana_dashboard: true
+  logging:
+    elasticsearch: true
+    kibana_dashboard: true
+  alerts:
+    slack_webhook: "https://hooks.slack.com/services/xxx"
+    email: "ops-team@example.com"
+    pagerduty_key: "xxx"
+
+disaster_recovery:
+  backup_schedule: "0 2 * * *"
+  retention_days: 30
+  storage_location: "s3://backups-bucket/harbor"

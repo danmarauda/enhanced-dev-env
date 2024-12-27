@@ -1,0 +1,127 @@
+project: gitops
+description: "GitOps-focused Container Registry"
+global_policies:
+  vulnerability_scanning: true
+  image_scanning: true
+  retention:
+    days: 45
+    count: 30
+
+repositories:
+  - name: argocd
+    public: false
+    description: "ArgoCD custom tools and extensions"
+    policies:
+      - type: vulnerability
+        severity: critical
+      - type: tag_retention
+        count: 20
+        pattern: "v*"
+    metadata:
+      type: gitops
+      platform: argocd
+    webhooks:
+      - url: https://argocd.example.com/api/webhook
+        events: [PUSH, DELETE]
+
+  - name: flux
+    public: false
+    description: "Flux CD components and tools"
+    policies:
+      - type: vulnerability
+        severity: critical
+      - type: tag_retention
+        count: 15
+        pattern: "*"
+    metadata:
+      type: gitops
+      platform: flux
+
+  - name: helm-charts
+    public: false
+    description: "Helm chart repositories"
+    policies:
+      - type: vulnerability
+        severity: high
+      - type: tag_retention
+        count: 50
+        pattern: "chart-*"
+    metadata:
+      type: charts
+      format: helm
+    webhooks:
+      - url: https://chartmuseum.example.com/webhook
+        events: [PUSH, DELETE]
+
+  - name: env-prod
+    public: false
+    description: "Production environment images"
+    policies:
+      - type: vulnerability
+        severity: critical
+        block_on_severity: true
+      - type: tag_retention
+        count: 10
+        pattern: "release-*"
+    metadata:
+      environment: production
+      promotion_required: true
+    webhooks:
+      - url: https://deploy.example.com/prod-webhook
+        events: [PUSH, SCANNING_COMPLETED]
+
+  - name: env-staging
+    public: false
+    description: "Staging environment images"
+    policies:
+      - type: vulnerability
+        severity: high
+      - type: tag_retention
+        count: 20
+        pattern: "*"
+    metadata:
+      environment: staging
+      auto_promote: true
+
+  - name: env-dev
+    public: false
+    description: "Development environment images"
+    policies:
+      - type: vulnerability
+        severity: high
+      - type: tag_retention
+        count: 30
+        pattern: "*"
+    metadata:
+      environment: development
+      auto_deploy: true
+
+promotion_policies:
+  - from: env-dev
+    to: env-staging
+    auto: true
+    criteria:
+      - scan_status: pass
+      - vulnerability_severity: "<=medium"
+  - from: env-staging
+    to: env-prod
+    auto: false
+    criteria:
+      - scan_status: pass
+      - vulnerability_severity: "<=low"
+      - approval_required: true
+
+monitoring:
+  prometheus_endpoint: "http://prometheus:9090"
+  grafana_dashboard: "https://grafana.example.com/d/harbor-gitops"
+  alert_channels:
+    - type: slack
+      webhook: "https://hooks.slack.com/services/xxx"
+    - type: email
+      recipients: "gitops-team@example.com"
+
+automation:
+  image_promotion: true
+  vulnerability_scanning: true
+  deployment_triggers: true
+  cleanup_schedule: "0 0 * * *"

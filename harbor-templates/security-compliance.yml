@@ -1,0 +1,167 @@
+project: security
+description: "Security-Focused Registry with Enhanced Compliance"
+global_policies:
+  vulnerability_scanning: true
+  image_scanning: true
+  retention:
+    days: 365  # Full year retention for compliance
+    count: 100
+
+# Common security policies
+security_defaults: &security_defaults
+  public: false
+  vulnerability_scanning: true
+  image_scanning: true
+  policies:
+    - type: vulnerability
+      severity: medium
+      block_on_severity: true
+    - type: tag_immutable
+      enabled: true
+    - type: content_trust
+      enabled: true
+
+repositories:
+  # Security Tools
+  - name: security-scanner
+    <<: *security_defaults
+    description: "Security Scanning Tools"
+    policies:
+      - type: vulnerability
+        severity: critical
+        block_on_severity: true
+    metadata:
+      compliance: required
+      audit_level: high
+    webhooks:
+      - url: https://siem.example.com/harbor
+        events: [SCANNING_COMPLETED, VULNERABILITY_FOUND]
+
+  - name: audit-tools
+    <<: *security_defaults
+    description: "Audit and Compliance Tools"
+    metadata:
+      compliance: required
+      audit_frequency: daily
+
+  # Compliance-Regulated Services
+  - name: pci-services
+    <<: *security_defaults
+    description: "PCI Compliant Services"
+    policies:
+      - type: vulnerability
+        severity: low
+        block_on_severity: true
+      - type: tag_retention
+        count: 365
+        pattern: "*"
+    metadata:
+      compliance_type: pci-dss
+      audit_required: true
+    webhooks:
+      - url: https://compliance.example.com/pci
+        events: [PUSH, PULL, SCANNING_COMPLETED]
+
+  - name: hipaa-services
+    <<: *security_defaults
+    description: "HIPAA Compliant Services"
+    policies:
+      - type: vulnerability
+        severity: low
+        block_on_severity: true
+      - type: tag_retention
+        count: 365
+        pattern: "*"
+    metadata:
+      compliance_type: hipaa
+      data_encryption: required
+
+  - name: gdpr-services
+    <<: *security_defaults
+    description: "GDPR Compliant Services"
+    policies:
+      - type: vulnerability
+        severity: low
+        block_on_severity: true
+    metadata:
+      compliance_type: gdpr
+      data_location: eu-only
+
+  # Secure Base Images
+  - name: hardened-base
+    <<: *security_defaults
+    description: "Security-Hardened Base Images"
+    policies:
+      - type: vulnerability
+        severity: low
+        block_on_severity: true
+      - type: tag_immutable
+        enabled: true
+    metadata:
+      base_type: security
+      hardening: maximum
+
+compliance_checks:
+  pci-dss:
+    scan_frequency: daily
+    retention_period: 365
+    required_controls:
+      - image_signing
+      - vulnerability_scanning
+      - access_logging
+  hipaa:
+    encryption_required: true
+    audit_logging: true
+    access_controls: strict
+  gdpr:
+    data_classification: required
+    retention_controls: strict
+    privacy_impact: required
+
+security_controls:
+  image_signing:
+    required: true
+    verification: strict
+  access_control:
+    mfa_required: true
+    rbac: strict
+    session_timeout: 3600
+  encryption:
+    at_rest: true
+    in_transit: true
+    key_rotation: 90
+
+monitoring:
+  siem_integration:
+    endpoint: "https://siem.example.com/harbor"
+    format: "cef"
+  audit_logging:
+    retention_days: 365
+    backup_enabled: true
+  alerts:
+    security_team: "security@example.com"
+    compliance_team: "compliance@example.com"
+    critical_alerts:
+      pagerduty: true
+      slack: true
+      email: true
+
+reporting:
+  compliance_reports:
+    schedule: weekly
+    recipients: "compliance-team@example.com"
+  vulnerability_reports:
+    schedule: daily
+    threshold: medium
+    format: pdf
+  audit_reports:
+    schedule: monthly
+    retention: 365
+    format: pdf
+
+disaster_recovery:
+  backup_schedule: "0 1 * * *"
+  encryption: true
+  retention_period: 365
+  offsite_backup: true
+  backup_verification: weekly

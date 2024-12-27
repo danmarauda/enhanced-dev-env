@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "migrations": [
+    {
+      "operation": "add_field",
+      "path": "global_policies.vulnerability_scanning",
+      "value": true
+    },
+    {
+      "operation": "add_field",
+      "path": "global_policies.image_scanning",
+      "value": true
+    },
+    {
+      "operation": "rename_field",
+      "old_path": "repositories.vulnerability_scan",
+      "new_path": "repositories.vulnerability_scanning"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+project: aiml
+description: "AI/ML Model Registry and Artifact Management"
+global_policies:
+  vulnerability_scanning: true
+  image_scanning: true
+  retention:
+    days: 90  # Longer retention for model versioning
+    count: 50
+
+repositories:
+  - name: models
+    public: false
+    description: "Trained model artifacts"
+    policies:
+      - type: tag_retention
+        count: 100
+        pattern: "v*"  # Version tags
+      - type: tag_retention
+        count: 10
+        pattern: "exp-*"  # Experiment tags
+    metadata:
+      model_framework: pytorch
+      model_type: production
+    webhooks:
+      - url: https://mlflow.example.com/webhook
+        events: [PUSH, PULL, DELETE]
+      - url: https://monitoring.example.com/models
+        events: [SCANNING_COMPLETED]
+
+  - name: datasets
+    public: false
+    description: "Training and validation datasets"
+    policies:
+      - type: tag_retention
+        count: 30
+        pattern: "dataset-v*"
+    metadata:
+      data_type: training
+      format: parquet
+    webhooks:
+      - url: https://data-catalog.example.com/webhook
+        events: [PUSH, DELETE]
+
+  - name: notebooks
+    public: false
+    description: "Jupyter notebook environments"
+    policies:
+      - type: vulnerability
+        severity: high
+      - type: tag_retention
+        count: 5
+        pattern: "*"
+    metadata:
+      environment: jupyter
+      cuda_version: "11.8"
+
+  - name: training
+    public: false
+    description: "Training environments and configurations"
+    policies:
+      - type: vulnerability
+        severity: critical
+      - type: tag_retention
+        count: 20
+        pattern: "train-*"
+    metadata:
+      gpu: required
+      distributed: enabled
+
+monitoring:
+  metrics_endpoint: "https://prometheus.example.com/metrics"
+  alert_webhook: "https://alerts.example.com/harbor"
+  thresholds:
+    model_size_gb: 10
+    vulnerability_critical: 0
+    vulnerability_high: 2

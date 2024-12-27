@@ -1,0 +1,108 @@
+project: devops
+description: "DevOps Pipeline and Infrastructure Management"
+global_policies:
+  vulnerability_scanning: true
+  image_scanning: true
+  retention:
+    days: 30
+    count: 20
+
+repositories:
+  - name: ci-tools
+    public: false
+    description: "CI/CD tools and utilities"
+    policies:
+      - type: vulnerability
+        severity: critical
+      - type: tag_retention
+        count: 10
+        pattern: "*"
+    metadata:
+      type: tooling
+      environment: ci
+    webhooks:
+      - url: https://jenkins.example.com/harbor-webhook
+        events: [PUSH, SCANNING_COMPLETED]
+
+  - name: base-images
+    public: false
+    description: "Base images for all services"
+    policies:
+      - type: vulnerability
+        severity: high
+      - type: tag_retention
+        count: 20
+        pattern: "v*"
+    metadata:
+      type: base
+      compliance: required
+    webhooks:
+      - url: https://security.example.com/base-images
+        events: [SCANNING_COMPLETED, VULNERABILITY_FOUND]
+
+  - name: k8s-tools
+    public: false
+    description: "Kubernetes tools and operators"
+    policies:
+      - type: vulnerability
+        severity: critical
+      - type: tag_retention
+        count: 15
+        pattern: "*"
+    metadata:
+      platform: kubernetes
+      type: tools
+
+  - name: monitoring
+    public: false
+    description: "Monitoring and observability tools"
+    policies:
+      - type: vulnerability
+        severity: high
+      - type: tag_retention
+        count: 10
+        pattern: "*"
+    metadata:
+      stack: monitoring
+      components: "prometheus,grafana,alertmanager"
+
+  - name: backup-tools
+    public: false
+    description: "Backup and recovery tools"
+    policies:
+      - type: vulnerability
+        severity: critical
+      - type: tag_retention
+        count: 5
+        pattern: "*"
+    metadata:
+      type: backup
+      schedule: daily
+
+  - name: security-tools
+    public: false
+    description: "Security scanning and analysis tools"
+    policies:
+      - type: vulnerability
+        severity: critical
+      - type: tag_retention
+        count: 10
+        pattern: "*"
+    metadata:
+      type: security
+      compliance: required
+
+monitoring:
+  prometheus_metrics: true
+  alert_manager: true
+  webhooks:
+    - url: https://ops.example.com/harbor-alerts
+      events: [VULNERABILITY_FOUND, SCANNING_FAILED]
+    - url: https://security.example.com/harbor-events
+      events: [SCANNING_COMPLETED]
+
+compliance:
+  scan_on_push: true
+  block_on_critical: true
+  report_recipients: "security@example.com"
+  retention_policy: strict
